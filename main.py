@@ -45,6 +45,8 @@ def process_anzu(bot, message: 'message'):
         val = r.get(key)
         if not val:
             val = '그런거 몰라'
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')
         yield from bot.post(message['channel'], val)
     elif message.get('text', '') == '안즈쨩 뭐해?':
         yield from bot.post(message['channel'], '숨셔')
