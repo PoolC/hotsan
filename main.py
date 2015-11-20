@@ -1,8 +1,10 @@
 import config
 from butterfield import Bot
 import butterfield
-import redis
+import redis, logging
 import meu, anzu
+
+logging.basicConfig(filename='bot.log')
 
 def main():
     r = redis.StrictRedis(host='localhost', port=6379, db=0)
