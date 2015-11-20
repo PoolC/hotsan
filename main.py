@@ -3,14 +3,22 @@ from butterfield import Bot
 import butterfield
 import redis
 import meu, anzu
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-exit = None
+def main():
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-meu_bot = Bot(config.token_meu)
-meu_bot.listen(meu.process)
+    exit = None
 
-anzu_bot = Bot(config.token_anzu)
-anzu_bot.listen(anzu.process)
+    meu_bot = Bot(config.token_meu)
+    meu_bot.listen(meu.process)
 
-butterfield.run(meu_bot, anzu_bot)
+    anzu_bot = Bot(config.token_anzu)
+    anzu_bot.listen(anzu.process)
+
+    butterfield.run(meu_bot, anzu_bot)
+
+if __name__ == "__main__":
+    from daemonize import Daemonize
+    from sys import argv
+    daemon = Daemonize(app="test_app", pid=argv[1], action=main)
+    daemon.start()

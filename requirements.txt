@@ -1,2 +1,3 @@
 git+https://github.com/sunlightlabs/butterfield.git@69033ea00fd2dea9042b425ae8bf36c6198f1a48
 redis
+daemonize
