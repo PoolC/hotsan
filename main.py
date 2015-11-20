@@ -15,12 +15,15 @@ def main():
     meu_bot.listen(meu.process)
 
     anzu_bot = Bot(config.token_anzu)
-    anzu_bot.listen(anzu.process)
+    anzu_bot.listen(anzu.process(r))
 
     butterfield.run(meu_bot, anzu_bot)
 
 if __name__ == "__main__":
     from daemonize import Daemonize
     from sys import argv
-    daemon = Daemonize(app="test_app", pid=argv[1], action=main)
-    daemon.start()
+    if argv[1] == '-i':
+        main()
+    else:
+        daemon = Daemonize(app="test_app", pid=argv[1], action=main)
+        daemon.start()
