@@ -22,6 +22,8 @@ def process_meu(bot, message: 'message'):
                 yield from bot.post(message['channel'], '에러났다 메우. 이상한것 좀 시키지 마라 메우')
     elif message.get('text', '') == '메우, 멱살':
         yield from bot.post(message['channel'], '사람은 일을 하고 살아야한다. 메우')
+    elif message.get('text', '') == '메우메우 펫탄탄':
+        yield from bot.post(message['channel'], '메메메 메메메메 메우메우\n메메메 메우메우\n펫땅펫땅펫땅펫땅 다이스키')
 
 @asyncio.coroutine
 def process_anzu(bot, message: 'message'):
