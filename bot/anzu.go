@@ -17,6 +17,7 @@ var (
 	tell_re       *regexp.Regexp = regexp.MustCompile("^안즈쨩? 알려줘 (.+)")
 	kawaii_re     *regexp.Regexp = regexp.MustCompile("^안즈쨩? 카와이")
 	give_candy_re *regexp.Regexp = regexp.MustCompile("^안즈쨩? 사탕줄게")
+	dice          *regexp.Regexp = regexp.MustCompile("^안즈쨩? 주사위 ([0-9]+)")
 )
 
 type Anzu struct {
@@ -85,6 +86,9 @@ func anzuMessageProcess(bot *Anzu, e *slack.MessageEvent) interface{} {
 			return ret
 		} else if _, ok := MatchRE(e.Text, kawaii_re); ok {
 			return "뭐... 뭐라는거야"
+		} else if matched, ok := MatchRE(e.Text, dice); ok {
+			num := matched[1]
+			return fmt.Sprintf("%d", num * rand.Float32())
 		}
 	}
 	return nil
