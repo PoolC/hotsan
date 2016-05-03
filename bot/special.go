@@ -75,8 +75,37 @@ var (
 		"모두의 하트! 꿰뚫어버릴거야! BANG!",
 		"파렴치해요!",
 		"으헿!",
-		"다음번엔 이길겁니다!",
+		"츠기코소카치마스!",
 		"러브 애로우 슛!",
+	}
+	honoresp []string = []string{
+		"파이토다요!",
+		"오늘도 빵이 마시쪙!",
+		"으에에?!",
+		"팥소 질렸어...",
+		"아메! 야메!",
+		"지금의 우리들이라면 반드시 어디라도 갈 수 있어! 어떤 꿈이라도 이룰 수 있어!",
+	}
+	makiresp []string = []string{
+		"붸에에",
+		"토라나이데!",
+		"포지티브가 아후레다스!",
+		"붸...붸쯔니...",
+		"마키쨩 카와이이~?",
+		"오코토와리시마스",
+	}
+	chunchunresp []string = []string{
+		"코토리의 간식으로 삼아버린다~?♡",
+		"내 슛으로 하트 마크를 붙여버릴거야~♡",
+		"듬뿍이란 말 야할지도...",
+		"허넠카쨩~♡",
+		"응미쨩~♡",
+		"와앗! 깜짝 놀랐잖아요~♡",
+		"뭐, 뭐하시는건가요...?",
+		"알파카는 정말 귀여워요. 푹신푹신~ 복슬복슬~",
+		"당신 생일에는 코토리가 케이크가 되어버릴까나...? ...핫! 안돼요!",
+		"아아~ 기분좋아~♡",
+		"대신귀\n여운알\n파카를\n드리겟\n읍니다",
 	}
 )
 
@@ -113,7 +142,16 @@ func specialResponses(bot *BaseBot, e *slack.MessageEvent) {
 	if simpleMatch(text, "니코니코니", "25252"){
 		randomResponse(bot, channel, ":niconiconii:", "야자와 니코", nicoresp)
 	}
-	if simpleMatch(text, "우미쨩", "응미쨩"){
+	if simpleMatch(text, "우미쨩", "응미쨩", "우미", "응미"){
 		randomResponse(bot, channel, ":zeclixwife:", "소노다 우미", umiresp)
+	}
+	if simpleMatch(text, "호노카", "허넠카", "호노카쨩", "허넠카쨩", "파이토다요"){
+		randomResponse(bot, channel, ":faito:", "코사카 호노카", honoresp)
+	}
+	if simpleMatch(text, "붸에에", "마키", "마키쨩","껌센마"){
+		randomResponse(bot, channel, ":buee:", "니시키노 마키", makiresp)
+	}
+	if simpleMatch(text, "츙츙","코토리","코토리쨩", "고도리", "고도리쨩"){
+		randomResponse(bot, channel, ":chunchun:", "미나미 코토리", chunchunresp)
 	}
 }
