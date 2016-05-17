@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/nlopes/slack"
@@ -24,13 +25,25 @@ type Bot interface {
 type BaseBot struct {
 	*slack.Client
 	*slack.RTM
-	stop *chan struct{}
+	mention_str string
+	stop        *chan struct{}
 }
 
 func NewBot(token string, stop *chan struct{}) *BaseBot {
 	api := slack.New(token)
-	bot := &BaseBot{api, api.NewRTM(), stop}
-	return bot
+	return &BaseBot{api, api.NewRTM(), "", stop}
+}
+
+func (bot *BaseBot) MentionStr() string {
+	return bot.mention_str
+}
+
+func (bot *BaseBot) IsBeginWithMention(e *slack.MessageEvent) bool {
+	return strings.HasPrefix(e.Text, bot.MentionStr())
+}
+
+func (bot *BaseBot) IsMentioned(e *slack.MessageEvent) bool {
+	return strings.Contains(e.Text, bot.MentionStr())
 }
 
 func (bot *BaseBot) replySimple(e *slack.MessageEvent, text string) {
@@ -50,6 +63,8 @@ func (bot *BaseBot) onHelloEvent(e *slack.HelloEvent) {
 }
 
 func (bot *BaseBot) onConnectedEvent(e *slack.ConnectedEvent) {
+	bot_user := bot.GetInfo().User
+	bot.mention_str = fmt.Sprintf("<@%s>", bot_user.ID)
 }
 
 func (bot *BaseBot) onMessageEvent(e *slack.MessageEvent) {

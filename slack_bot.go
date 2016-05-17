@@ -107,7 +107,7 @@ func worker() {
 	})}
 
 	anzu := bot.NewAnzu(cfg.Bot["Anzu"].Token, &stop, redisClient)
-	meu := bot.NewMeu(cfg.Bot["Meu"].Token, &stop)
+	meu := bot.NewMeu(cfg.Bot["Meu"].Token, &stop, redisClient)
 
 	go bot.StartBot(anzu, &wg)
 	go bot.StartBot(meu, &wg)

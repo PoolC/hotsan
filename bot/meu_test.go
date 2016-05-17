@@ -6,7 +6,8 @@ import (
 )
 
 func newMeu() *Meu {
-	return &Meu{nil}
+	ret := &Meu{&BaseBot{nil, nil, "<@meu>", nil}, nil, nil}
+	return ret
 }
 
 func TestSimpleReactionMeu(t *testing.T) {
