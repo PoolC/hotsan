@@ -19,7 +19,7 @@ import (
 type Meu struct {
 	*BaseBot
 	rc        RedisClient
-	timetable map[string]TimeTable
+	timetable map[string]*TimeTable
 }
 
 var (
@@ -28,7 +28,7 @@ var (
 )
 
 func NewMeu(token string, stop *chan struct{}, redisClient RedisClient) *Meu {
-	return &Meu{NewBot(token, stop), redisClient, map[string]TimeTable{}}
+	return &Meu{NewBot(token, stop), redisClient, map[string]*TimeTable{}}
 }
 
 func (bot *Meu) onMessageEvent(e *slack.MessageEvent) {
@@ -72,8 +72,10 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 			go getEveryTimeTable(bot, e.User, user.Name, et_nick)
 		} else if strings.HasSuffix(text, "다음 시간") {
 			// 에브리타임 다음 시간
-			var timetable TimeTable
-			if timetable, exists := bot.timetable[e.User]; !exists {
+			log.Printf("%q", bot.timetable)
+			timetable, exists := bot.timetable[e.User]
+			if !exists {
+				log.Print("Get from redis")
 				result := bot.rc.Get(TimeTableKeyName(e.User))
 				if result == nil {
 					bot.replySimple(e, "시간표 정보가 없다 메우. 등록부터 해달라 메우.")
@@ -81,6 +83,7 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 				}
 
 				bytes, _ := result.Bytes()
+				timetable = &TimeTable{}
 				if json.Unmarshal(bytes, timetable) != nil {
 					bot.replySimple(e, "저장된 시간표가 이상하다 메우. 새로 등록해달라 메우.")
 					return nil
@@ -96,6 +99,7 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 			if weekDay < 0 || weekDay >= 5 {
 				nextEvent = nil
 			} else {
+				log.Printf("%q", timetable)
 				todayEvents := timetable.Days[weekDay].Events
 				for _, event := range todayEvents {
 					if event.StartTime > curHour {

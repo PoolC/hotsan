@@ -14,16 +14,23 @@ import (
 
 	"encoding/json"
 
+	"log"
+
 	"github.com/nlopes/slack"
 	"golang.org/x/net/html"
 )
 
 type TimeTableResponse struct {
+	XMLName  xml.Name `xml:"response"`
 	Year     int `xml:"year,attr"`
 	Semester int `xml:"semester,attr"`
 	Subjects []struct {
-		Name      string
-		Professor string
+		Name      struct {
+			Value string `xml:"value,attr"`
+		} `xml:"name"`
+		Professor struct {
+			Value string `xml:"value,attr"`
+		} `xml:"professor"`
 		Times     []struct {
 			Place     string `xml:"place,attr"`
 			EndTime   int    `xml:"endtime,attr"`
@@ -71,8 +78,8 @@ func (resp *TimeTableResponse) toTimeTable() *TimeTable {
 	ret.Subjects = make([]Subject, len(resp.Subjects))
 	for i, subject := range resp.Subjects {
 		ret.Subjects[i] = Subject{
-			subject.Name,
-			subject.Professor,
+			subject.Name.Value,
+			subject.Professor.Value,
 		}
 		for _, day := range subject.Times {
 			ret.Days[day.Day].Events = append(ret.Days[day.Day].Events, TimeTableEvent{
@@ -94,11 +101,10 @@ func (resp *TimeTableResponse) toTimeTable() *TimeTable {
 // return value is dummy...
 func getEveryTimeTable(bot *Meu, userid string, username string, et_nick string) error {
 	ret := &slack.OutgoingMessage{}
-	defer func() {
-		bot.SendMessage(ret)
-	}()
 	quit := func(msg string, args ...interface{}) error {
-		ret.Text = fmt.Sprintf("<@%s|%s> "+msg, userid, username, args)
+		ret.Text = fmt.Sprintf("<@%s> "+msg, userid, args)
+		log.Print(ret.Text)
+		bot.SendMessage(ret)
 		return nil
 	}
 
@@ -114,7 +120,7 @@ func getEveryTimeTable(bot *Meu, userid string, username string, et_nick string)
 	}
 
 	now := time.Now()
-	if now.Year() != latest_info.Year || (int(now.Month())-1)/6 != latest_info.Semester {
+	if now.Year() != latest_info.Year || (int(now.Month())-1)/6+1 != latest_info.Semester {
 		return quit("에러: 현재 학기의 시간표가 없습니다.")
 	}
 
@@ -137,7 +143,7 @@ func getEveryTimeTable(bot *Meu, userid string, username string, et_nick string)
 	}
 
 	timetable := timetableResp.toTimeTable()
-	bot.timetable[userid] = *timetable
+	bot.timetable[userid] = timetable
 	serialized, err := json.Marshal(timetable)
 	if err != nil {
 		return quit("에러: 시간표 저장 실패")
@@ -171,7 +177,7 @@ func parseTimeTableList(reader io.Reader) (*TimeTableInfo, error) {
 			switch {
 			case n.Data == "input":
 				var input_id, input_val string
-				for _, attr := range n.FirstChild.Attr {
+				for _, attr := range n.Attr {
 					if attr.Key == "id" {
 						input_id = attr.Val
 					} else if attr.Key == "value" {
@@ -183,7 +189,7 @@ func parseTimeTableList(reader io.Reader) (*TimeTableInfo, error) {
 					ret.Year, _ = strconv.Atoi(input_val)
 				case "semester":
 					ret.Semester, _ = strconv.Atoi(input_val)
-				case "id":
+				case "tableId":
 					ret.Id = input_val
 				}
 				break
@@ -209,7 +215,6 @@ func parseTimeTable(body []byte) (*TimeTableResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return schedule, nil
 }
 
@@ -239,3 +244,4 @@ func (nextEvent *TimeTableEvent) toSlackAttachment(subject *Subject) slack.Attac
 		},
 	}
 }
+
