@@ -31,10 +31,7 @@ type BaseBot struct {
 
 func NewBot(token string, stop *chan struct{}) *BaseBot {
 	api := slack.New(token)
-	bot := &BaseBot{api, api.NewRTM(), "", stop}
-	bot_user := bot.GetInfo().User
-	bot.mention_str = fmt.Sprintf("<@%s|%s>", bot_user.ID, bot_user.Name)
-	return bot
+	return &BaseBot{api, api.NewRTM(), "", stop}
 }
 
 func (bot *BaseBot) MentionStr() string {
@@ -66,6 +63,8 @@ func (bot *BaseBot) onHelloEvent(e *slack.HelloEvent) {
 }
 
 func (bot *BaseBot) onConnectedEvent(e *slack.ConnectedEvent) {
+	bot_user := bot.GetInfo().User
+	bot.mention_str = fmt.Sprintf("<@%s>", bot_user.ID)
 }
 
 func (bot *BaseBot) onMessageEvent(e *slack.MessageEvent) {
