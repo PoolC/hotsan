@@ -47,8 +47,7 @@ func (bot *BaseBot) IsMentioned(e *slack.MessageEvent) bool {
 }
 
 func (bot *BaseBot) replySimple(e *slack.MessageEvent, text string) {
-	user, _ := bot.GetUserInfo(e.User)
-	bot.sendSimple(e, fmt.Sprintf("@%s: %s", user.Name, text))
+	bot.sendSimple(e, fmt.Sprintf("<@%s>: %s", e.User, text))
 }
 
 func (bot *BaseBot) sendSimple(e *slack.MessageEvent, text string) {
