@@ -12,6 +12,7 @@ type RedisClient interface {
 	Erase(key string)
 	Exists(key string) bool
 	SetAdd(key string, val string) IntCmd
+	SetCard(key string) IntCmd
 	SetList(key string) ([]string, error)
 	Keys(pattern string) ([]string, error)
 }
@@ -59,6 +60,10 @@ func (r *RedisClientWrap) Exists(key string) bool {
 
 func (r *RedisClientWrap) SetAdd(key string, val string) IntCmd {
 	return r.R.SAdd(key, val)
+}
+
+func (r *RedisClientWrap) SetCard(key string) IntCmd {
+	return r.R.SCard(key)
 }
 
 func (r *RedisClientWrap) SetList(key string) ([]string, error) {
