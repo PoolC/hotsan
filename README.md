@@ -60,4 +60,4 @@ anzu, meu 두개의 구현체가 존재.
 암호화된 prod_config를 실제 서비스 실행시 적용함.  
 `openssl`의 `enc`명령을 사용, `aes-256-ecb` cipher 사용해서 암/복호화 수행함.  
 `openssl`의 `enc`사용법은 https://www.openssl.org/docs/manmaster/apps/enc.html 참조.  
-암호화에 사용된 키는 *#anzu_meu* 채널에 pin되어있으니 참고.
+암호화에 사용된 키는 *#bot_test* 채널에 pin되어있으니 참고.
