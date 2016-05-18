@@ -6,7 +6,7 @@ import (
 )
 
 func newMeu() *Meu {
-	ret := &Meu{&BaseBot{nil, nil, "<@meu>", nil}, nil, nil}
+	ret := &Meu{&BaseBot{nil, nil, "<@meu>", nil}, nil, nil, nil}
 	return ret
 }
 

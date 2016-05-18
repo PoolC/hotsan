@@ -11,24 +11,36 @@ import (
 
 	"time"
 
+	"strconv"
+
 	. "github.com/PoolC/slack_bot/util"
 	"github.com/marcmak/calc/calc"
 	"github.com/nlopes/slack"
+	"github.com/robfig/cron"
 )
 
 type Meu struct {
 	*BaseBot
 	rc        RedisClient
 	timetable map[string]*TimeTable
+	cr        *cron.Cron
 }
 
 var (
-	calc_re     *regexp.Regexp = regexp.MustCompile("^계산하라 메우 (.+)")
-	et_register *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
+	calc_re        *regexp.Regexp = regexp.MustCompile("^계산하라 메우 (.+)")
+	et_register    *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
+	party_register *regexp.Regexp = regexp.MustCompile("(?:(\\d+)월 *(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
 )
 
 func NewMeu(token string, stop *chan struct{}, redisClient RedisClient) *Meu {
-	return &Meu{NewBot(token, stop), redisClient, map[string]*TimeTable{}}
+	c := cron.New()
+	c.Start()
+	return &Meu{NewBot(token, stop), redisClient, map[string]*TimeTable{}, c}
+}
+
+func (bot *Meu) onConnectedEvent(e *slack.ConnectedEvent) {
+	bot.BaseBot.onConnectedEvent(e)
+	rescheduleParty(bot)
 }
 
 func (bot *Meu) onMessageEvent(e *slack.MessageEvent) {
@@ -121,6 +133,34 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 						nextEvent.toSlackAttachment(subject),
 					},
 				})
+			}
+		} else if matched, ok := MatchRE(text, party_register); ok {
+			now := time.Now()
+			month, err := strconv.Atoi(matched[1])
+			if err != nil {
+				month = int(now.Month())
+			}
+			day, err := strconv.Atoi(matched[2])
+			if err != nil {
+				day = now.Day()
+			}
+			hour, err := strconv.Atoi(matched[3])
+			min, err := strconv.Atoi(matched[4])
+			if err != nil {
+				min = 0
+			}
+			keyword := matched[5]
+
+			date := time.Date(now.Year(), time.Month(month), day, hour, min, 0, 0, now.Location())
+			if date.Before(now) {
+				bot.replySimple(e, "과거에 대해서 파티를 모집할 수 없다 메우")
+				return nil
+			}
+			key := partyKey(&date, keyword)
+			cardinal := bot.rc.SetAdd(key, e.User)
+			bot.replySimple(e, "파티 대기에 들어갔다 메우.")
+			if cardinal.Val() == 1 {
+				scheduleParty(bot, &date, keyword)
 			}
 		}
 	}
