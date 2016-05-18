@@ -12,6 +12,11 @@
 			"Rev": "9153359e4c6e3dd6fecd68332164321b5efd543f"
 		},
 		{
+			"ImportPath": "github.com/robfig/cron",
+			"Comment": "v1-18-g8dc4916",
+			"Rev": "8dc4916d418b9d0b2e23c9c1e68351dc9a1d6573"
+		},
+		{
 			"ImportPath": "github.com/sevlyar/go-daemon",
 			"Rev": "5841a7979e56bc7b2efa860e69f1d944e14f4d4a"
 		},
