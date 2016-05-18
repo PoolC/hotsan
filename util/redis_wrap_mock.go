@@ -108,6 +108,10 @@ func (r *RedisClientMock) SetAdd(key string, val string) IntCmd {
 	return &IntCmdMock{0}
 }
 
+func (r *RedisClientMock) SetCard(key string) IntCmd {
+	return &IntCmdMock{0}
+}
+
 func (r *RedisClientMock) SetList(key string) ([]string, error) {
 	return nil, nil
 }
