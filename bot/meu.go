@@ -157,10 +157,15 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 				return nil
 			}
 			key := partyKey(&date, keyword)
-			cardinal := bot.rc.SetAdd(key, e.User)
-			bot.replySimple(e, "파티 대기에 들어갔다 메우.")
-			if cardinal.Val() == 1 {
-				scheduleParty(bot, &date, keyword)
+			inserted := bot.rc.SetAdd(key, e.User)
+			if inserted.Val() == 1 {
+				bot.replySimple(e, "파티 대기에 들어갔다 메우.")
+				cardinal := bot.rc.SetCard(key)
+				if cardinal.Val() == 1 {
+					scheduleParty(bot, &date, keyword)
+				}
+			} else {
+				bot.replySimple(e, "이미 들어가있는 파티다 메우.")
 			}
 		}
 	}
