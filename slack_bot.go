@@ -20,6 +20,7 @@ var (
 	signal = flag.String("s", "", `send signal to the daemon
 		quit — graceful shutdown
 		stop — fast shutdown`)
+	test = flag.String("t", "", "test id")
 
 	cfg struct {
 		General struct {
@@ -106,6 +107,9 @@ func worker() {
 		DB:       0,  // use default DB
 	})}
 
+	if *test != "" {
+		bot.SetTest(*test)
+	}
 	anzu := bot.NewAnzu(cfg.Bot["Anzu"].Token, &stop, redisClient)
 	meu := bot.NewMeu(cfg.Bot["Meu"].Token, &stop, redisClient)
 

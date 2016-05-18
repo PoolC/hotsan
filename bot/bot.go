@@ -10,6 +10,11 @@ import (
 	"github.com/nlopes/slack"
 )
 
+var (
+	testKey     string
+	testChannel string
+)
+
 type Bot interface {
 	getBase() *BaseBot
 	onHelloEvent(e *slack.HelloEvent)
@@ -51,7 +56,11 @@ func (bot *BaseBot) replySimple(e *slack.MessageEvent, text string) {
 }
 
 func (bot *BaseBot) sendSimple(e *slack.MessageEvent, text string) {
-	bot.SendMessage(bot.NewOutgoingMessage(text, e.Channel))
+	bot.SendMessage(bot.NewOutgoingMessage(testKey+text, e.Channel))
+}
+
+func (bot *BaseBot) PostMessage(channel string, text string, params slack.PostMessageParameters) (string, string, error) {
+	return bot.Client.PostMessage(channel, testKey+text, params)
 }
 
 func (bot *BaseBot) getBase() *BaseBot {
@@ -64,6 +73,19 @@ func (bot *BaseBot) onHelloEvent(e *slack.HelloEvent) {
 func (bot *BaseBot) onConnectedEvent(e *slack.ConnectedEvent) {
 	bot_user := bot.GetInfo().User
 	bot.mention_str = fmt.Sprintf("<@%s>", bot_user.ID)
+	if len(testChannel) == 0 {
+		channels, err := bot.GetChannels(true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, channel := range channels {
+			if channel.Name == "bot_test" {
+				testChannel = channel.ID
+				log.Print("test channel : " + testChannel)
+				break
+			}
+		}
+	}
 }
 
 func (bot *BaseBot) onMessageEvent(e *slack.MessageEvent) {
@@ -109,7 +131,9 @@ Loop:
 			case *slack.ConnectedEvent:
 				bot.onConnectedEvent(ev)
 			case *slack.MessageEvent:
-				bot.onMessageEvent(ev)
+				if testKey == "" || testChannel == ev.Channel {
+					bot.onMessageEvent(ev)
+				}
 			case *slack.PresenceChangeEvent:
 				bot.onPresenceChangeEvent(ev)
 			case *slack.LatencyReport:
@@ -129,4 +153,8 @@ Loop:
 	}
 
 	wg.Done()
+}
+
+func SetTest(test_key string) {
+	testKey = test_key
 }
