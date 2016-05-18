@@ -83,6 +83,42 @@ func (c *RedisClientMock) Get(key string) StringCmd {
 	return ret
 }
 
+func (c *RedisClientMock) Exists(key string) bool {
+	_, exists := c.data[key]
+	return exists
+}
+
+type IntCmdMock struct {
+	val int64
+}
+
+func (c *IntCmdMock) Val() int64 {
+	return c.val
+}
+
+func (c *IntCmdMock) String() string {
+	return strconv.FormatInt(c.val, 10)
+}
+
+func (c *IntCmdMock) Result() (int64, error) {
+	return c.val, nil
+}
+
+func (r *RedisClientMock) SetAdd(key string, val string) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SetList(key string) ([]string, error) {
+	return nil, nil
+}
+
+func (r *RedisClientMock) Keys(pattern string) ([]string, error) {
+	return nil, nil
+}
+
+func (r *RedisClientMock) Erase(key string) {
+}
+
 func NewRedisMock() RedisClient {
 	return &RedisClientMock{map[string][]byte{}}
 }
