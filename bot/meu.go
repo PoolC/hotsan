@@ -29,6 +29,7 @@ type Meu struct {
 var (
 	calc_re        *regexp.Regexp = regexp.MustCompile("^계산하라 메우 (.+)")
 	et_register    *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
+	et_call        *regexp.Regexp = regexp.MustCompile("다음 (시간|수업)")
 	party_register *regexp.Regexp = regexp.MustCompile("(?:(\\d+)월 *(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
 )
 
@@ -82,7 +83,7 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 
 			user, _ := bot.GetUserInfo(e.User)
 			go getEveryTimeTable(bot, e.User, user.Name, et_nick)
-		} else if strings.HasSuffix(text, "다음 시간") {
+		} else if _, ok := MatchRE(text, et_call); ok {
 			// 에브리타임 다음 시간
 			log.Printf("%q", bot.timetable)
 			timetable, exists := bot.timetable[e.User]
