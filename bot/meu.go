@@ -30,7 +30,7 @@ var (
 	calc_re        *regexp.Regexp = regexp.MustCompile("^계산하라 메우 (.+)")
 	et_register    *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
 	et_call        *regexp.Regexp = regexp.MustCompile("다음 (시간|수업)")
-	party_register *regexp.Regexp = regexp.MustCompile("(?:(\\d+)월 *(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
+	party_register *regexp.Regexp = regexp.MustCompile("(?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
 )
 
 func NewMeu(token string, stop *chan struct{}, redisClient RedisClient) *Meu {
@@ -138,12 +138,18 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 		} else if matched, ok := MatchRE(text, party_register); ok {
 			now := time.Now()
 			month, err := strconv.Atoi(matched[1])
+			var not_set struct {
+				month bool
+				day   bool
+			}
 			if err != nil {
 				month = int(now.Month())
+				not_set.month = true
 			}
 			day, err := strconv.Atoi(matched[2])
 			if err != nil {
 				day = now.Day()
+				not_set.day = true
 			}
 			hour, err := strconv.Atoi(matched[3])
 			min, err := strconv.Atoi(matched[4])
@@ -154,19 +160,39 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 
 			date := time.Date(now.Year(), time.Month(month), day, hour, min, 0, 0, now.Location())
 			if date.Before(now) {
-				bot.replySimple(e, "과거에 대해서 파티를 모집할 수 없다 메우")
-				return nil
+				corrected := false
+				// first try after 12 hour
+				if not_set.day {
+					if date.Hour() < 12 {
+						date = date.Add(time.Hour * 12)
+						if corrected = !date.Before(now); !corrected {
+							// reset
+							date = date.Add(time.Hour * -12)
+						}
+					}
+					if !corrected {
+						date = date.AddDate(0, 0, 1)
+					}
+				} else if not_set.month {
+					date = date.AddDate(0, 1, 0)
+				} else {
+					date = date.AddDate(1, 0, 0)
+				}
+				if date.Before(now) {
+					bot.replySimple(e, "과거에 대해서 파티를 모집할 수 없다 메우")
+					return nil
+				}
 			}
 			key := partyKey(&date, keyword)
 			inserted := bot.rc.SetAdd(key, e.User)
 			if inserted.Val() == 1 {
-				bot.replySimple(e, "파티 대기에 들어갔다 메우.")
+				bot.replySimple(e, fmt.Sprintf("파티 대기에 들어갔다 메우. - %s %s", date.String(), keyword))
 				cardinal := bot.rc.SetCard(key)
 				if cardinal.Val() == 1 {
 					scheduleParty(bot, &date, keyword)
 				}
 			} else {
-				bot.replySimple(e, "이미 들어가있는 파티다 메우.")
+				bot.replySimple(e, fmt.Sprintf("이미 들어가있는 파티다 메우. - %s %s", date.String(), keyword))
 			}
 		}
 	}
