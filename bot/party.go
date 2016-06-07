@@ -29,13 +29,17 @@ func rescheduleParty(bot *Meu) {
 			bot.rc.Erase(key)
 		} else {
 			scheduleParty(bot, &saved_time, parts[2])
-			if _, err := bot.rc.SortedSetRank(partyIndexKey, key).Result(); err != nil {
-				bot.rc.SortedSetAdd(partyIndexKey, sec, key)
-			}
+			registerToIndex(bot, &saved_time, key)
 		}
 	}
 
 	bot.rc.SortedSetRemoveRange(partyIndexKey, 0, now.Unix())
+}
+
+func registerToIndex(bot *Meu, date *time.Time, key string) {
+	if _, err := bot.rc.SortedSetRank(partyIndexKey, key).Result(); err != nil {
+		bot.rc.SortedSetAdd(partyIndexKey, int(date.Unix()), key)
+	}
 }
 
 func scheduleParty(bot *Meu, date *time.Time, keyword string) {
@@ -114,6 +118,7 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	}
 	key := partyKey(&date, keyword)
 	inserted := bot.rc.SetAdd(key, e.User)
+	registerToIndex(bot, &date, key)
 	if inserted.Val() == 1 {
 		bot.replySimple(e, fmt.Sprintf("파티 대기에 들어갔다 메우. - %s %s", date.String(), keyword))
 		cardinal := bot.rc.SetCard(key)
