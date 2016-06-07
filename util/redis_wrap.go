@@ -21,6 +21,8 @@ type RedisClient interface {
 	SortedSetRange(key string, min int64, max int64) ([]string, error)
 	SortedSetRemoveRange(key string, min int64, max int64) IntCmd
 	SortedSetRank(key string, value string) IntCmd
+	SortedSetRemove(key string, values ...string) IntCmd
+	SortedSetCard(key string) IntCmd
 	Keys(pattern string) ([]string, error)
 }
 
@@ -104,4 +106,12 @@ func (r *RedisClientWrap) SortedSetRemoveRange(key string, min int64, max int64)
 
 func (r *RedisClientWrap) SortedSetRank(key string, value string) IntCmd {
 	return r.R.ZRank(key, value)
+}
+
+func (r *RedisClientWrap) SortedSetRemove(key string, values ...string) IntCmd {
+	return r.R.ZRem(key, values...)
+}
+
+func (r *RedisClientWrap) SortedSetCard(key string) IntCmd {
+	return r.R.ZCard(key)
 }

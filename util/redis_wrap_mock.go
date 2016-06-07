@@ -143,6 +143,14 @@ func (r *RedisClientMock) SortedSetRank(key string, value string) IntCmd {
 	return &IntCmdMock{0}
 }
 
+func (r *RedisClientMock) SortedSetRemove(key string, values ...string) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SortedSetCard(key string) IntCmd {
+	return &IntCmdMock{0}
+}
+
 func NewRedisMock() RedisClient {
 	return &RedisClientMock{map[string][]byte{}}
 }
