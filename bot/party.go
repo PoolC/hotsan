@@ -159,13 +159,13 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		},
 	}
 	if inserted.Val() == 1 {
-		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.Username), responseData)
+		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.User), responseData)
 		cardinal := bot.rc.SetCard(key)
 		if cardinal.Val() == 1 {
 			scheduleParty(bot, date, keyword)
 		}
 	} else {
-		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 이미 들어가있는 파티다 메우.", e.Username), responseData)
+		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 이미 들어가있는 파티다 메우.", e.User), responseData)
 	}
 }
 
@@ -210,6 +210,7 @@ func exit_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		bot.replySimple(e, "성공적으로 파티 대기에서 빠졌다 메우")
 		if bot.rc.SetCard(key).Val() == 0 {
 			bot.rc.Erase(key)
+			bot.rc.SortedSetRemove(partyIndexKey, key)
 		}
 	} else {
 		bot.replySimple(e, "잘못된 파티 이름이거나 대기중이 아닌 파티이다 메우")
