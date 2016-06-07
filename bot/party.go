@@ -63,3 +63,64 @@ func alarmFuncGenerator(bot *Meu, keyword string, key string) func() {
 		}
 	}
 }
+
+func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
+	now := time.Now()
+	month, err := strconv.Atoi(matched[1])
+	var not_set struct {
+		month bool
+		day   bool
+	}
+	if err != nil {
+		month = int(now.Month())
+		not_set.month = true
+	}
+	day, err := strconv.Atoi(matched[2])
+	if err != nil {
+		day = now.Day()
+		not_set.day = true
+	}
+	hour, err := strconv.Atoi(matched[3])
+	min, err := strconv.Atoi(matched[4])
+	if err != nil {
+		min = 0
+	}
+	keyword := matched[5]
+
+	date := time.Date(now.Year(), time.Month(month), day, hour, min, 0, 0, now.Location())
+	if date.Before(now) {
+		corrected := false
+		// first try after 12 hour
+		if not_set.day {
+			if date.Hour() < 12 {
+				date = date.Add(time.Hour * 12)
+				if corrected = !date.Before(now); !corrected {
+					// reset
+					date = date.Add(time.Hour * -12)
+				}
+			}
+			if !corrected {
+				date = date.AddDate(0, 0, 1)
+			}
+		} else if not_set.month {
+			date = date.AddDate(0, 1, 0)
+		} else {
+			date = date.AddDate(1, 0, 0)
+		}
+		if date.Before(now) {
+			bot.replySimple(e, "과거에 대해서 파티를 모집할 수 없다 메우")
+			return
+		}
+	}
+	key := partyKey(&date, keyword)
+	inserted := bot.rc.SetAdd(key, e.User)
+	if inserted.Val() == 1 {
+		bot.replySimple(e, fmt.Sprintf("파티 대기에 들어갔다 메우. - %s %s", date.String(), keyword))
+		cardinal := bot.rc.SetCard(key)
+		if cardinal.Val() == 1 {
+			scheduleParty(bot, &date, keyword)
+		}
+	} else {
+		bot.replySimple(e, fmt.Sprintf("이미 들어가있는 파티다 메우. - %s %s", date.String(), keyword))
+	}
+}

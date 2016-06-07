@@ -22,16 +22,16 @@ import (
 
 type TimeTableResponse struct {
 	XMLName  xml.Name `xml:"response"`
-	Year     int `xml:"year,attr"`
-	Semester int `xml:"semester,attr"`
+	Year     int      `xml:"year,attr"`
+	Semester int      `xml:"semester,attr"`
 	Subjects []struct {
-		Name      struct {
+		Name struct {
 			Value string `xml:"value,attr"`
 		} `xml:"name"`
 		Professor struct {
 			Value string `xml:"value,attr"`
 		} `xml:"professor"`
-		Times     []struct {
+		Times []struct {
 			Place     string `xml:"place,attr"`
 			EndTime   int    `xml:"endtime,attr"`
 			StartTime int    `xml:"starttime,attr"`
@@ -245,3 +245,66 @@ func (nextEvent *TimeTableEvent) toSlackAttachment(subject *Subject) slack.Attac
 	}
 }
 
+func register_et(bot *Meu, e *slack.MessageEvent, matched []string) {
+	// 에브리타임 기록
+	et_nick := matched[1]
+	bot.rc.Set(fmt.Sprintf("et_nick_%s", e.User), et_nick, 0)
+	bot.replySimple(e, "기억했다 메우. 시간표를 가져오겠다 메우.\n시간이 좀 걸릴거다 메우.")
+
+	user, _ := bot.GetUserInfo(e.User)
+	go getEveryTimeTable(bot, e.User, user.Name, et_nick)
+}
+
+func next_et(bot *Meu, e *slack.MessageEvent, matched []string) {
+	// 에브리타임 다음 시간
+	log.Printf("%q", bot.timetable)
+	timetable, exists := bot.timetable[e.User]
+	if !exists {
+		log.Print("Get from redis")
+		result := bot.rc.Get(TimeTableKeyName(e.User))
+		if result == nil {
+			bot.replySimple(e, "시간표 정보가 없다 메우. 등록부터 해달라 메우.")
+			return
+		}
+
+		bytes, _ := result.Bytes()
+		timetable = &TimeTable{}
+		if json.Unmarshal(bytes, timetable) != nil {
+			bot.replySimple(e, "저장된 시간표가 이상하다 메우. 새로 등록해달라 메우.")
+			return
+		}
+
+		bot.timetable[e.User] = timetable
+	}
+
+	now := time.Now()
+	weekDay := int(now.Weekday() - 1)
+	curHour := now.Hour()*12 + now.Minute()/5
+	var nextEvent *TimeTableEvent
+	if weekDay < 0 || weekDay >= 5 {
+		nextEvent = nil
+	} else {
+		log.Printf("%q", timetable)
+		todayEvents := timetable.Days[weekDay].Events
+		for _, event := range todayEvents {
+			if event.StartTime > curHour {
+				nextEvent = &event
+				break
+			}
+		}
+	}
+	if nextEvent == nil {
+		bot.replySimple(e, "오늘은 더 이상 수업이 없다 메우.")
+	} else {
+		subject := &timetable.Subjects[nextEvent.Id]
+
+		bot.PostMessage(e.Channel, fmt.Sprintf("다음 수업은 \"%s\"다 메우.", subject.Name), slack.PostMessageParameters{
+			AsUser:    false,
+			IconEmoji: ":meu:",
+			Username:  "시간표 알려주는 메우",
+			Attachments: []slack.Attachment{
+				nextEvent.toSlackAttachment(subject),
+			},
+		})
+	}
+}
