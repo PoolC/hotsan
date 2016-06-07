@@ -135,14 +135,37 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	key := partyKey(date, keyword)
 	inserted := bot.rc.SetAdd(key, e.User)
 	registerToIndex(bot, date, key)
+	responseData := slack.PostMessageParameters{
+		AsUser:    false,
+		IconEmoji: ":meu:",
+		Username:  meuName,
+		Attachments: []slack.Attachment{
+			slack.Attachment{
+				Fields: []slack.AttachmentField{
+					slack.AttachmentField{
+						Title: "일시",
+						Value: date.String(),
+					},
+					slack.AttachmentField{
+						Title: "이름",
+						Value: keyword,
+					},
+					slack.AttachmentField{
+						Title: "파티 ID",
+						Value: key,
+					},
+				},
+			},
+		},
+	}
 	if inserted.Val() == 1 {
-		bot.replySimple(e, fmt.Sprintf("파티 대기에 들어갔다 메우. - %s %s", date.String(), keyword))
+		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.Username), responseData)
 		cardinal := bot.rc.SetCard(key)
 		if cardinal.Val() == 1 {
 			scheduleParty(bot, date, keyword)
 		}
 	} else {
-		bot.replySimple(e, fmt.Sprintf("이미 들어가있는 파티다 메우. - %s %s", date.String(), keyword))
+		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 이미 들어가있는 파티다 메우.", e.Username), responseData)
 	}
 }
 
@@ -179,4 +202,16 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 				},
 			},
 		})
+}
+
+func exit_party(bot *Meu, e *slack.MessageEvent, matched []string) {
+	key := strings.TrimSpace(matched[1])
+	if bot.rc.SetRemove(key, e.User).Val() == 1 {
+		bot.replySimple(e, "성공적으로 파티 대기에서 빠졌다 메우")
+		if bot.rc.SetCard(key).Val() == 0 {
+			bot.rc.Erase(key)
+		}
+	} else {
+		bot.replySimple(e, "잘못된 파티 이름이거나 대기중이 아닌 파티이다 메우")
+	}
 }
