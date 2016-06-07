@@ -212,7 +212,9 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 			})
 		}
 		return
-	} else if e_t == nil {
+	}
+	begin = *b_t
+	if e_t == nil {
 		d, _ := time.ParseDuration("1h")
 		end = begin.Add(d)
 		d, _ = time.ParseDuration("-1h")
@@ -220,7 +222,6 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	} else {
 		end = *e_t
 	}
-	begin = *b_t
 
 	keys, _ := bot.rc.SortedSetRange(partyIndexKey, begin.Unix(), end.Unix())
 	attachments := make([]slack.AttachmentField, len(keys))
