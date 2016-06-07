@@ -186,8 +186,10 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	attachments := make([]slack.AttachmentField, len(keys))
 	for i, key := range keys {
 		t, k := parseKey(key)
-		attachments[i].Title = k
-		attachments[i].Value = t.String()
+		attachments[i] = slack.AttachmentField{
+			Title: k,
+			Value: t.String(),
+		}
 	}
 
 	bot.PostMessage(e.Channel,
