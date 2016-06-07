@@ -124,7 +124,7 @@ func correctDate(matched []string) *time.Time {
 }
 
 func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
-	keyword := matched[5]
+	keyword := strings.TrimSpace(matched[5])
 
 	date := correctDate(matched[1:])
 	if date == nil {
