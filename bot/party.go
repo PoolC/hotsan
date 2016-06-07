@@ -96,6 +96,9 @@ func correctDate(matched []string) *time.Time {
 		not_set.day = true
 	}
 	hour, err := strconv.Atoi(matched[2])
+	if err != nil {
+		return nil
+	}
 	min, err := strconv.Atoi(matched[3])
 	if err != nil {
 		min = 0
@@ -186,8 +189,8 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 }
 
 func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
-	b_t := correctDate(matched[1:4])
-	e_t := correctDate(matched[5:8])
+	b_t := correctDate(matched[1:5])
+	e_t := correctDate(matched[5:9])
 	var (
 		end   time.Time
 		begin time.Time
@@ -217,6 +220,7 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	} else {
 		end = *e_t
 	}
+	begin = *b_t
 
 	keys, _ := bot.rc.SortedSetRange(partyIndexKey, begin.Unix(), end.Unix())
 	attachments := make([]slack.AttachmentField, len(keys))
