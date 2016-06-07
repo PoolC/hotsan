@@ -31,9 +31,7 @@ func rescheduleParty(bot *Meu) {
 }
 
 func scheduleParty(bot *Meu, date *time.Time, keyword string) {
-	dur, _ := time.ParseDuration("-10m")
-	noti_date := date.Add(dur)
-	bot.cr.AddFunc(fmt.Sprintf("0 %d %d %d %d *", noti_date.Minute(), noti_date.Hour(), noti_date.Day(), noti_date.Month()), alarmFuncGenerator(bot, keyword, partyKey(date, keyword)))
+	bot.cr.AddFunc(fmt.Sprintf("0 %d %d %d %d *", date.Minute(), date.Hour(), date.Day(), date.Month()), alarmFuncGenerator(bot, keyword, partyKey(date, keyword)))
 }
 
 func partyKey(date *time.Time, keyword string) string {
