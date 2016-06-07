@@ -22,18 +22,22 @@ func rescheduleParty(bot *Meu) {
 	}
 	now := time.Now()
 	for _, key := range items {
-		parts := strings.Split(key, "_")
-		sec, _ := strconv.Atoi(parts[1])
-		saved_time := time.Unix(int64(sec), 0)
+		saved_time, keyword := parseKey(key)
 		if now.After(saved_time) {
 			bot.rc.Erase(key)
 		} else {
-			scheduleParty(bot, &saved_time, parts[2])
+			scheduleParty(bot, &saved_time, keyword)
 			registerToIndex(bot, &saved_time, key)
 		}
 	}
 
 	bot.rc.SortedSetRemoveRange(partyIndexKey, 0, now.Unix())
+}
+
+func parseKey(key string) (time.Time, string) {
+	parts := strings.Split(key, "_")
+	sec, _ := strconv.Atoi(parts[1])
+	return time.Unix(int64(sec), 0), parts[2]
 }
 
 func registerToIndex(bot *Meu, date *time.Time, key string) {
