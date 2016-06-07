@@ -123,6 +123,34 @@ func (r *RedisClientMock) Keys(pattern string) ([]string, error) {
 func (r *RedisClientMock) Erase(key string) {
 }
 
+func (r *RedisClientMock) SetRemove(key string, val ...string) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SortedSetAdd(key string, score int, value string) bool {
+	return true
+}
+
+func (r *RedisClientMock) SortedSetRange(key string, min int64, max int64) ([]string, error) {
+	return []string{""}, nil
+}
+
+func (r *RedisClientMock) SortedSetRemoveRange(key string, min int64, max int64) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SortedSetRank(key string, value string) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SortedSetRemove(key string, values ...string) IntCmd {
+	return &IntCmdMock{0}
+}
+
+func (r *RedisClientMock) SortedSetCard(key string) IntCmd {
+	return &IntCmdMock{0}
+}
+
 func NewRedisMock() RedisClient {
 	return &RedisClientMock{map[string][]byte{}}
 }
