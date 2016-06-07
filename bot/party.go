@@ -25,6 +25,10 @@ func rescheduleParty(bot *Meu) {
 	for _, key := range items {
 		saved_time, keyword := parseKey(key)
 		if now.After(saved_time) {
+			members, _ := bot.rc.SetList(key)
+			for _, member := range members {
+				bot.rc.SetRemove(prefix+member, key)
+			}
 			bot.rc.Erase(key)
 		} else {
 			scheduleParty(bot, &saved_time, keyword)
@@ -63,6 +67,7 @@ func alarmFuncGenerator(bot *Meu, keyword string, key string) func() {
 			members := make([]string, len(list))
 			for i, item := range list {
 				members[i] = fmt.Sprintf("<@%s>", item)
+				bot.rc.SetRemove(prefix+item, key)
 			}
 			bot.PostMessage("#random", fmt.Sprintf("'%s' 파티 10분 전이다 메우. %s", keyword, strings.Join(members, " ")), slack.PostMessageParameters{
 				AsUser:    false,
@@ -123,6 +128,30 @@ func correctDate(matched []string) *time.Time {
 	return &date
 }
 
+func event_key_to_slack_attach(key string) slack.Attachment {
+	date, keyword := parseKey(key)
+	return event_to_slack_attach(key, keyword, &date)
+}
+
+func event_to_slack_attach(key string, keyword string, date *time.Time) slack.Attachment {
+	return slack.Attachment{
+		Fields: []slack.AttachmentField{
+			slack.AttachmentField{
+				Title: "일시",
+				Value: date.String(),
+			},
+			slack.AttachmentField{
+				Title: "이름",
+				Value: keyword,
+			},
+			slack.AttachmentField{
+				Title: "파티 ID",
+				Value: key,
+			},
+		},
+	}
+}
+
 func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	keyword := strings.TrimSpace(matched[5])
 
@@ -140,27 +169,13 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		IconEmoji: ":meu:",
 		Username:  meuName,
 		Attachments: []slack.Attachment{
-			slack.Attachment{
-				Fields: []slack.AttachmentField{
-					slack.AttachmentField{
-						Title: "일시",
-						Value: date.String(),
-					},
-					slack.AttachmentField{
-						Title: "이름",
-						Value: keyword,
-					},
-					slack.AttachmentField{
-						Title: "파티 ID",
-						Value: key,
-					},
-				},
-			},
+			event_to_slack_attach(key, keyword, date),
 		},
 	}
 	if inserted.Val() == 1 {
 		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.User), responseData)
 		cardinal := bot.rc.SetCard(key)
+		bot.rc.SetAdd(prefix+e.User, key)
 		if cardinal.Val() == 1 {
 			scheduleParty(bot, date, keyword)
 		}
@@ -170,10 +185,30 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 }
 
 func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
-	begin := *correctDate(matched[1:4])
+	b_t := correctDate(matched[1:4])
 	e_t := correctDate(matched[5:8])
-	var end time.Time
-	if e_t == nil {
+	var (
+		end   time.Time
+		begin time.Time
+	)
+	if b_t == nil {
+		keys, err := bot.rc.SetList(prefix + e.User)
+		if err != nil {
+			bot.replySimple(e, "대기중인 파티가 없다 메우.")
+		} else {
+			attachments := make([]slack.Attachment, len(keys))
+			for i, key := range keys {
+				attachments[i] = event_key_to_slack_attach(key)
+			}
+			bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 지금 대기중인 파티는 다음과 같다 메우.", e.User), slack.PostMessageParameters{
+				AsUser:      false,
+				IconEmoji:   ":meu:",
+				Username:    meuName,
+				Attachments: attachments,
+			})
+		}
+		return
+	} else if e_t == nil {
 		d, _ := time.ParseDuration("1h")
 		end = begin.Add(d)
 		d, _ = time.ParseDuration("-1h")
@@ -210,6 +245,7 @@ func exit_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	key := strings.TrimSpace(matched[1])
 	if bot.rc.SetRemove(key, e.User).Val() == 1 {
 		bot.replySimple(e, "성공적으로 파티 대기에서 빠졌다 메우")
+		bot.rc.SetRemove(prefix+e.User, key)
 		if bot.rc.SetCard(key).Val() == 0 {
 			bot.rc.Erase(key)
 			bot.rc.SortedSetRemove(partyIndexKey, key)
