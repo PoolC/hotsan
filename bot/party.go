@@ -13,6 +13,7 @@ import (
 var (
 	prefix        string = "party_"
 	partyIndexKey string = prefix + "keys"
+	meuName       string = "파티 모집원 메우"
 )
 
 func rescheduleParty(bot *Meu) {
@@ -65,7 +66,7 @@ func alarmFuncGenerator(bot *Meu, keyword string, key string) func() {
 			}
 			bot.PostMessage("#random", fmt.Sprintf("'%s' 파티 10분 전이다 메우. %s", keyword, strings.Join(members, " ")), slack.PostMessageParameters{
 				AsUser:    false,
-				Username:  "파티 안내원 메우",
+				Username:  meuName,
 				IconEmoji: ":meu:",
 			})
 		}
@@ -171,7 +172,7 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		slack.PostMessageParameters{
 			AsUser:    false,
 			IconEmoji: ":meu:",
-			Username:  "파티 모집원 메우",
+			Username:  meuName,
 			Attachments: []slack.Attachment{
 				slack.Attachment{
 					Fields: attachments,
