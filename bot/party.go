@@ -144,3 +144,38 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		bot.replySimple(e, fmt.Sprintf("이미 들어가있는 파티다 메우. - %s %s", date.String(), keyword))
 	}
 }
+
+func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
+	begin := *correctDate(matched[1:4])
+	e_t := correctDate(matched[5:8])
+	var end time.Time
+	if e_t == nil {
+		d, _ := time.ParseDuration("1h")
+		end = begin.Add(d)
+		d, _ = time.ParseDuration("-1h")
+		begin = begin.Add(d)
+	} else {
+		end = *e_t
+	}
+
+	keys, _ := bot.rc.SortedSetRange(partyIndexKey, begin.Unix(), end.Unix())
+	attachments := make([]slack.AttachmentField, len(keys))
+	for i, key := range keys {
+		t, k := parseKey(key)
+		attachments[i].Title = k
+		attachments[i].Value = t.String()
+	}
+
+	bot.PostMessage(e.Channel,
+		fmt.Sprintf("%s ~ %s 사이에 있는 파티 목록은 다음과 같다 메우.", begin.String(), end.String()),
+		slack.PostMessageParameters{
+			AsUser:    false,
+			IconEmoji: ":meu:",
+			Username:  "파티 모집원 메우",
+			Attachments: []slack.Attachment{
+				slack.Attachment{
+					Fields: attachments,
+				},
+			},
+		})
+}

@@ -25,6 +25,7 @@ var (
 	et_register    *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
 	et_call        *regexp.Regexp = regexp.MustCompile("다음 (시간|수업)")
 	party_register *regexp.Regexp = regexp.MustCompile("(?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
+	party_list     *regexp.Regexp = regexp.MustCompile("파티 목록 (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)( ~ (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분))?")
 )
 
 func NewMeu(token string, stop *chan struct{}, redisClient RedisClient) *Meu {
@@ -75,6 +76,8 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 			next_et(bot, e, matched)
 		} else if matched, ok := MatchRE(text, party_register); ok {
 			register_party(bot, e, matched)
+		} else if matched, ok := MatchRE(text, party_list); ok {
+			list_party(bot, e, matched)
 		}
 	}
 
