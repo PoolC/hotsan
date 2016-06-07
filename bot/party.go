@@ -10,7 +10,10 @@ import (
 	"github.com/nlopes/slack"
 )
 
-var prefix string = "party_"
+var (
+	prefix        string = "party_"
+	partyIndexKey string = prefix + "keys"
+)
 
 func rescheduleParty(bot *Meu) {
 	items, err := bot.rc.Keys(prefix + "*")
@@ -26,8 +29,13 @@ func rescheduleParty(bot *Meu) {
 			bot.rc.Erase(key)
 		} else {
 			scheduleParty(bot, &saved_time, parts[2])
+			if _, err := bot.rc.SortedSetRank(partyIndexKey, key).Result(); err != nil {
+				bot.rc.SortedSetAdd(partyIndexKey, sec, key)
+			}
 		}
 	}
+
+	bot.rc.SortedSetRemoveRange(partyIndexKey, 0, now.Unix())
 }
 
 func scheduleParty(bot *Meu, date *time.Time, keyword string) {
