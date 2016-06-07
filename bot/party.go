@@ -147,10 +147,12 @@ func event_to_slack_attach(key string, keyword string, date *time.Time) slack.At
 			slack.AttachmentField{
 				Title: "이름",
 				Value: keyword,
+				Short: true,
 			},
 			slack.AttachmentField{
 				Title: "파티 ID",
 				Value: key,
+				Short: true,
 			},
 		},
 	}
@@ -230,6 +232,7 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		attachments[i] = slack.AttachmentField{
 			Title: k,
 			Value: t.String(),
+			Short: true,
 		}
 	}
 
