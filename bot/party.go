@@ -12,7 +12,8 @@ import (
 
 var (
 	prefix        string = "party_"
-	partyIndexKey string = prefix + "keys"
+	sprefix       string = "s_" + prefix
+	partyIndexKey string = sprefix + "keys"
 	meuName       string = "파티 모집원 메우"
 )
 
@@ -27,7 +28,7 @@ func rescheduleParty(bot *Meu) {
 		if now.After(saved_time) {
 			members, _ := bot.rc.SetList(key)
 			for _, member := range members {
-				bot.rc.SetRemove(prefix+member, key)
+				bot.rc.SetRemove(sprefix+member, key)
 			}
 			bot.rc.Erase(key)
 		} else {
@@ -67,7 +68,7 @@ func alarmFuncGenerator(bot *Meu, keyword string, key string) func() {
 			members := make([]string, len(list))
 			for i, item := range list {
 				members[i] = fmt.Sprintf("<@%s>", item)
-				bot.rc.SetRemove(prefix+item, key)
+				bot.rc.SetRemove(sprefix+item, key)
 			}
 			bot.PostMessage("#random", fmt.Sprintf("'%s' 파티 10분 전이다 메우. %s", keyword, strings.Join(members, " ")), slack.PostMessageParameters{
 				AsUser:    false,
@@ -175,7 +176,7 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	if inserted.Val() == 1 {
 		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.User), responseData)
 		cardinal := bot.rc.SetCard(key)
-		bot.rc.SetAdd(prefix+e.User, key)
+		bot.rc.SetAdd(sprefix+e.User, key)
 		if cardinal.Val() == 1 {
 			scheduleParty(bot, date, keyword)
 		}
@@ -192,8 +193,8 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		begin time.Time
 	)
 	if b_t == nil {
-		keys, err := bot.rc.SetList(prefix + e.User)
-		if err != nil {
+		keys, err := bot.rc.SetList(sprefix + e.User)
+		if err != nil || len(keys) == 0 {
 			bot.replySimple(e, "대기중인 파티가 없다 메우.")
 		} else {
 			attachments := make([]slack.Attachment, len(keys))
@@ -245,7 +246,7 @@ func exit_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 	key := strings.TrimSpace(matched[1])
 	if bot.rc.SetRemove(key, e.User).Val() == 1 {
 		bot.replySimple(e, "성공적으로 파티 대기에서 빠졌다 메우")
-		bot.rc.SetRemove(prefix+e.User, key)
+		bot.rc.SetRemove(sprefix+e.User, key)
 		if bot.rc.SetCard(key).Val() == 0 {
 			bot.rc.Erase(key)
 			bot.rc.SortedSetRemove(partyIndexKey, key)
