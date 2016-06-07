@@ -177,14 +177,14 @@ func register_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		},
 	}
 	if inserted.Val() == 1 {
-		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 파티 대기에 들어갔다 메우", e.User), responseData)
+		bot.PostMessage(e.Channel, fmt.Sprintf("<@%s> 파티 대기에 들어갔다 메우", e.User), responseData)
 		cardinal := bot.rc.SetCard(key)
 		bot.rc.SetAdd(sprefix+e.User, key)
 		if cardinal.Val() == 1 {
 			scheduleParty(bot, date, keyword)
 		}
 	} else {
-		bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 이미 들어가있는 파티다 메우.", e.User), responseData)
+		bot.PostMessage(e.Channel, fmt.Sprintf("<@%s> 이미 들어가있는 파티다 메우.", e.User), responseData)
 	}
 }
 
@@ -204,7 +204,7 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 			for i, key := range keys {
 				attachments[i] = event_key_to_slack_attach(key)
 			}
-			bot.PostMessage(e.Channel, fmt.Sprintf("<%s> 지금 대기중인 파티는 다음과 같다 메우.", e.User), slack.PostMessageParameters{
+			bot.PostMessage(e.Channel, fmt.Sprintf("<@%s> 지금 대기중인 파티는 다음과 같다 메우.", e.User), slack.PostMessageParameters{
 				AsUser:      false,
 				IconEmoji:   ":meu:",
 				Username:    meuName,
