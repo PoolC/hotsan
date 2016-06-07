@@ -22,11 +22,11 @@ type Meu struct {
 
 var (
 	calc_re        *regexp.Regexp = regexp.MustCompile("^계산하라 메우 (.+)")
-	et_register    *regexp.Regexp = regexp.MustCompile("에타 등록 ([^ ]+)")
-	et_call        *regexp.Regexp = regexp.MustCompile("다음 (시간|수업)")
-	party_register *regexp.Regexp = regexp.MustCompile("(?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)")
-	party_list     *regexp.Regexp = regexp.MustCompile("파티 목록( (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)( ~ (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분))?)?")
-	party_exit     *regexp.Regexp = regexp.MustCompile("파티 탈퇴 (.+)")
+	et_register    *regexp.Regexp = regexp.MustCompile("^에타 등록 ([^ ]+)$")
+	et_call        *regexp.Regexp = regexp.MustCompile("^다음 (시간|수업)$")
+	party_register *regexp.Regexp = regexp.MustCompile("^(?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(.+)$")
+	party_list     *regexp.Regexp = regexp.MustCompile("^파티 목록(?: (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?(?: ~ (?:(?:(\\d+)월 *)?(\\d+)일 *)?(\\d+)시(?: *(\\d+)분)?)?)?$")
+	party_exit     *regexp.Regexp = regexp.MustCompile("^파티 탈퇴 (.+)$")
 )
 
 func NewMeu(token string, stop *chan struct{}, redisClient RedisClient) *Meu {
@@ -71,6 +71,7 @@ func meuMessageProcess(bot *Meu, e *slack.MessageEvent) interface{} {
 		specialResponses(bot.getBase(), e)
 	}
 	if bot.IsBeginWithMention(e) {
+		text = strings.TrimSpace(strings.Replace(text, bot.MentionStr(), "", 1))
 		if matched, ok := MatchRE(text, et_register); ok {
 			register_et(bot, e, matched)
 		} else if _, ok := MatchRE(text, et_call); ok {
