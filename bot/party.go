@@ -144,6 +144,7 @@ func event_to_slack_attach(key string, keyword string, date *time.Time) slack.At
 			slack.AttachmentField{
 				Title: "일시",
 				Value: ShortDate(date),
+				Short: true,
 			},
 			slack.AttachmentField{
 				Title: "이름",
