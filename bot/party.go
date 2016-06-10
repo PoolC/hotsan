@@ -7,6 +7,7 @@ import (
 
 	"strconv"
 
+	. "github.com/PoolC/slack_bot/util"
 	"github.com/nlopes/slack"
 )
 
@@ -142,7 +143,7 @@ func event_to_slack_attach(key string, keyword string, date *time.Time) slack.At
 		Fields: []slack.AttachmentField{
 			slack.AttachmentField{
 				Title: "일시",
-				Value: date.String(),
+				Value: ShortDate(date),
 			},
 			slack.AttachmentField{
 				Title: "이름",
@@ -231,13 +232,13 @@ func list_party(bot *Meu, e *slack.MessageEvent, matched []string) {
 		t, k := parseKey(key)
 		attachments[i] = slack.AttachmentField{
 			Title: k,
-			Value: t.String(),
+			Value: ShortDate(&t),
 			Short: true,
 		}
 	}
 
 	bot.PostMessage(e.Channel,
-		fmt.Sprintf("%s ~ %s 사이에 있는 파티 목록은 다음과 같다 메우.", begin.String(), end.String()),
+		fmt.Sprintf("%s ~ %s 사이에 있는 파티 목록은 다음과 같다 메우.", ShortDate(&begin), ShortDate(&end)),
 		slack.PostMessageParameters{
 			AsUser:    false,
 			IconEmoji: ":meu:",
