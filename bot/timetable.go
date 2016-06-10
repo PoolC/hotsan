@@ -228,18 +228,22 @@ func (nextEvent *TimeTableEvent) toSlackAttachment(subject *Subject) slack.Attac
 			slack.AttachmentField{
 				Title: "수업명",
 				Value: subject.Name,
+				Short: true,
 			},
 			slack.AttachmentField{
 				Title: "교수",
 				Value: subject.Professor,
+				Short: true,
 			},
 			slack.AttachmentField{
 				Title: "장소",
 				Value: nextEvent.Place,
+				Short: true,
 			},
 			slack.AttachmentField{
 				Title: "수업 시각",
 				Value: fmt.Sprintf("%s ~ %s", begin.Format(time.Kitchen), end.Format(time.Kitchen)),
+				Short: true,
 			},
 		},
 	}
