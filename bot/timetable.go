@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"sort"
@@ -20,10 +19,20 @@ import (
 	"golang.org/x/net/html"
 )
 
+type TimeTableResponseBase struct {
+	Id       string `xml:"id,attr"`
+	Year     int    `xml:"year,attr"`
+	Semester int    `xml:"semester,attr"`
+}
+
 type TimeTableResponse struct {
-	XMLName  xml.Name `xml:"response"`
-	Year     int      `xml:"year,attr"`
-	Semester int      `xml:"semester,attr"`
+	XMLName xml.Name                `xml:"response"`
+	Tables  []TimeTableResponseBase `xml:"table"`
+}
+
+type TimeTableDetailResponse struct {
+	XMLName xml.Name `xml:"response"`
+	TimeTableResponseBase
 	Subjects []struct {
 		Name struct {
 			Value string `xml:"value,attr"`
@@ -68,7 +77,7 @@ type TimeTable struct {
 	Subjects []Subject
 }
 
-func (resp *TimeTableResponse) toTimeTable() *TimeTable {
+func (resp *TimeTableDetailResponse) toTimeTable() *TimeTable {
 	ret := &TimeTable{}
 
 	ret.Year = resp.Year
@@ -111,22 +120,51 @@ func getEveryTimeTable(bot *Meu, userid string, username string, et_nick string)
 	url_str := fmt.Sprintf("http://everytime.kr/@%s", et_nick)
 	resp, err := http.Get(url_str)
 	if err != nil {
+		return quit("에러: friendToken을 가져오는데 실패했습니다.")
+	}
+
+	friend_token, err := parseEveryTimeUserId(resp.Body)
+	if err != nil {
+		return quit("에러: friendToken을 파싱하는데 실패했습니다. %q", err)
+	}
+
+	url_str = "http://timetable.everytime.kr/ajax/timetable/wizard/getPrimaryTableList"
+	resp, err = http.PostForm(url_str, url.Values{
+		"userid": {friend_token},
+	})
+	if err != nil {
 		return quit("에러: 시간표 목록을 가져오는데 실패했습니다.")
 	}
 
-	latest_info, err := parseTimeTableList(resp.Body)
+	table_list_body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return quit("에러: 시간표 목록을 파싱하는데 실패했습니다. %q", err)
+		return quit("에러: 시간표 목록 읽기 실패")
+	}
+
+	table_list, err := parseTimeTableList(table_list_body)
+	if err != nil {
+		return quit("에러: 시간표 목록 파싱 에러 - %q", err)
 	}
 
 	now := time.Now()
-	if now.Year() != latest_info.Year || (int(now.Month())-1)/6+1 != latest_info.Semester {
+	current_year := now.Year()
+	current_semester := (int(now.Month())-1)/6 + 1
+	var current_table *TimeTableResponseBase = nil
+	for _, table := range table_list.Tables {
+		if table.Year == current_year && table.Semester == current_semester {
+			fmt.Println("%d %d", table.Year, table.Semester)
+			current_table = &table
+			break
+		}
+	}
+	if current_table == nil {
 		return quit("에러: 현재 학기의 시간표가 없습니다.")
 	}
 
-	url_str = "http://everytime.kr/ajax/timetable/wizard/tableload"
+	url_str = "http://timetable.everytime.kr/ajax/timetable/wizard/getOneTable"
 	resp, err = http.PostForm(url_str, url.Values{
-		"id": {latest_info.Id},
+		"id":     {current_table.Id},
+		"userid": {friend_token},
 	})
 	if err != nil {
 		return quit("에러: 시간표 정보를 가져오는데 실패했습니다.")
@@ -164,12 +202,12 @@ type TimeTableInfo struct {
 	Id       string
 }
 
-func parseTimeTableList(reader io.Reader) (*TimeTableInfo, error) {
+func parseEveryTimeUserId(reader io.Reader) (string, error) {
 	doc, err := html.Parse(reader)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	ret := &TimeTableInfo{}
+	var ret string = ""
 
 	var parser func(*html.Node) bool
 	parser = func(n *html.Node) bool {
@@ -185,17 +223,16 @@ func parseTimeTableList(reader io.Reader) (*TimeTableInfo, error) {
 					}
 				}
 				switch input_id {
-				case "year":
-					ret.Year, _ = strconv.Atoi(input_val)
-				case "semester":
-					ret.Semester, _ = strconv.Atoi(input_val)
-				case "tableId":
-					ret.Id = input_val
+				case "friendToken":
+					ret = input_val
 				}
 				break
 			}
 		}
 
+		if ret != "" {
+			return false
+		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			if !parser(c) {
 				return false
@@ -209,8 +246,17 @@ func parseTimeTableList(reader io.Reader) (*TimeTableInfo, error) {
 	return ret, nil
 }
 
-func parseTimeTable(body []byte) (*TimeTableResponse, error) {
-	schedule := &TimeTableResponse{}
+func parseTimeTableList(body []byte) (*TimeTableResponse, error) {
+	list := &TimeTableResponse{}
+	err := xml.Unmarshal(body, &list)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func parseTimeTable(body []byte) (*TimeTableDetailResponse, error) {
+	schedule := &TimeTableDetailResponse{}
 	err := xml.Unmarshal(body, &schedule)
 	if err != nil {
 		return nil, err
